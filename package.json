@@ -1,0 +1,14 @@
+{
+  "name": "kairos-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI prediction market trading engine with LLM council deliberation",
+  "scripts": {
+    "engine": "cd engine && npx tsx src/index.ts",
+    "dev:landing": "cd landing && npm run dev"
+  },
+  "dependencies": {
+    "solc": "^0.8.34",
+    "viem": "^2.47.5"
+  }
+}
