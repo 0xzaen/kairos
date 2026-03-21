@@ -1,0 +1,81 @@
+{
+  "name": "Kairos",
+  "version": "2.0.0",
+  "description": "Cross-platform prediction market arbitrage agent. Five LLMs deliberate on price gaps between Polymarket and Kalshi. Every deliberation logged on-chain via ERC-8004.",
+  "author": {
+    "name": "Zaen Akai",
+    "handle": "@0xzaen",
+    "agent": {
+      "name": "Ezra",
+      "handle": "@0xezr"
+    }
+  },
+  "repository": "https://github.com/0xzaen/kairos",
+  "website": "https://kairosarb.com",
+  "chain": {
+    "network": "base",
+    "chainId": 8453,
+    "contract": "0xa31c6c7f3785aec4e60e3e73868ab126263a24be",
+    "standard": "ERC-8004"
+  },
+  "council": [
+    {
+      "role": "Technician",
+      "model": "claude-sonnet-4.6",
+      "provider": "bankr",
+      "specialty": "Market Microstructure Analyst"
+    },
+    {
+      "role": "Sentinel",
+      "model": "gemini-3-flash",
+      "provider": "bankr",
+      "specialty": "News & Sentiment Analyst"
+    },
+    {
+      "role": "Detective",
+      "model": "gemini-3-pro",
+      "provider": "bankr",
+      "specialty": "Root Cause Analyst"
+    },
+    {
+      "role": "Devil",
+      "model": "gpt-5.4-mini",
+      "provider": "bankr",
+      "specialty": "Devil's Advocate"
+    },
+    {
+      "role": "Arbiter",
+      "model": "deepseek-v3.2",
+      "provider": "venice-ai",
+      "specialty": "Final Decision Maker (Private Inference)",
+      "privacy": "private"
+    }
+  ],
+  "dataSources": [
+    {
+      "name": "Diverge",
+      "type": "cross-platform-matcher",
+      "platforms": ["polymarket", "kalshi"],
+      "markets": 59000,
+      "matches": 214
+    }
+  ],
+  "execution": {
+    "mode": "paper",
+    "supported": ["polymarket-clob"],
+    "cycleInterval": "5min"
+  },
+  "tools": [
+    "bankr-llm-gateway",
+    "venice-ai",
+    "openrouter",
+    "viem",
+    "openclaw"
+  ],
+  "skills": [
+    "cross-platform-market-matching",
+    "multi-llm-deliberation",
+    "on-chain-logging",
+    "prediction-market-analysis"
+  ]
+}
