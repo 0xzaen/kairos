@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { createPublicClient, http, parseAbiItem } from "viem";
+import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 
 const CONTRACT = "0xa31c6c7f3785aec4e60e3e73868ab126263a24be" as const;
@@ -13,20 +13,49 @@ const client = createPublicClient({
   ),
 });
 
-const DECISION_LOGGED_EVENT = parseAbiItem(
-  "event DecisionLogged(uint256 indexed id, string market, string decision, uint256 confidence, uint256 timestamp)"
-);
+const TOTAL_DECISIONS_ABI = [
+  {
+    inputs: [],
+    name: "totalDecisions",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
+const GET_DECISION_ABI = [
+  {
+    inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
+    name: "getDecision",
+    outputs: [
+      {
+        components: [
+          { internalType: "string", name: "market", type: "string" },
+          { internalType: "string", name: "decision", type: "string" },
+          { internalType: "uint256", name: "confidence", type: "uint256" },
+          { internalType: "string", name: "metadata", type: "string" },
+          { internalType: "uint256", name: "timestamp", type: "uint256" },
+          { internalType: "address", name: "reporter", type: "address" },
+        ],
+        internalType: "struct KairosLogger.Decision",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
 
 interface Deliberation {
-  id: bigint;
+  id: number;
   market: string;
   decision: string;
   confidence: number; // basis points (0-10000)
   timestamp: number;
-  txHash: string;
 }
 
-const REFRESH_INTERVAL_MS = 60_000; // Auto-refresh every 60s
+const REFRESH_INTERVAL_MS = 60_000;
 
 export default function DeliberationHistory() {
   const [deliberations, setDeliberations] = useState<Deliberation[]>([]);
@@ -35,143 +64,66 @@ export default function DeliberationHistory() {
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchViaReads = useCallback(async () => {
-    const totalRaw = await client.readContract({
-      address: CONTRACT,
-      abi: [
-        {
-          inputs: [],
-          name: "totalDecisions",
-          outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-          stateMutability: "view",
-          type: "function",
-        },
-      ],
-      functionName: "totalDecisions",
-    });
-    const total = Number(totalRaw);
-    setTotalCount(total);
+  const fetchDeliberations = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    try {
+      // Primary path: direct contract reads (works on all public RPCs)
+      const totalRaw = await client.readContract({
+        address: CONTRACT,
+        abi: TOTAL_DECISIONS_ABI,
+        functionName: "totalDecisions",
+      });
+      const total = Number(totalRaw);
+      setTotalCount(total);
 
-    if (total === 0) {
-      setDeliberations([]);
-      return;
-    }
-
-    const count = Math.min(total, 20);
-    const start = total - count;
-    const calls = Array.from({ length: count }, (_, i) => ({
-      address: CONTRACT as `0x${string}`,
-      abi: [
-        {
-          inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
-          name: "getDecision",
-          outputs: [
-            {
-              components: [
-                { internalType: "string", name: "market", type: "string" },
-                { internalType: "string", name: "decision", type: "string" },
-                { internalType: "uint256", name: "confidence", type: "uint256" },
-                { internalType: "string", name: "metadata", type: "string" },
-                { internalType: "uint256", name: "timestamp", type: "uint256" },
-                { internalType: "address", name: "reporter", type: "address" },
-              ],
-              internalType: "struct KairosLogger.Decision",
-              name: "",
-              type: "tuple",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-      ] as const,
-      functionName: "getDecision" as const,
-      args: [BigInt(start + i)] as readonly [bigint],
-    }));
-
-    const results = await client.multicall({ contracts: calls });
-
-    const parsed: Deliberation[] = results
-      .map((r, i) => {
-        if (r.status !== "success" || !r.result) return null;
-        const d = r.result as {
-          market: string;
-          decision: string;
-          confidence: bigint;
-          metadata: string;
-          timestamp: bigint;
-          reporter: string;
-        };
-        return {
-          id: BigInt(start + i),
-          market: d.market,
-          decision: d.decision,
-          confidence: Number(d.confidence),
-          timestamp: Number(d.timestamp),
-          txHash: "",
-        };
-      })
-      .filter((d): d is Deliberation => d !== null)
-      .reverse();
-
-    setDeliberations(parsed);
-  }, []);
-
-  const fetchDeliberations = useCallback(
-    async (isInitial = false) => {
-      if (isInitial) setLoading(true);
-      try {
-        // Try event logs first
-        const latestBlock = await client.getBlockNumber();
-        const fromBlock =
-          latestBlock > BigInt(500_000)
-            ? latestBlock - BigInt(500_000)
-            : BigInt(0);
-
-        const logs = await client.getLogs({
-          address: CONTRACT,
-          event: DECISION_LOGGED_EVENT,
-          fromBlock,
-          toBlock: "latest",
-        });
-
-        const parsed: Deliberation[] = logs
-          .map((log) => ({
-            id: (log.args as { id?: bigint }).id ?? BigInt(0),
-            market: (log.args as { market?: string }).market ?? "",
-            decision: (log.args as { decision?: string }).decision ?? "",
-            confidence: Number(
-              (log.args as { confidence?: bigint }).confidence ?? BigInt(0)
-            ),
-            timestamp: Number(
-              (log.args as { timestamp?: bigint }).timestamp ?? BigInt(0)
-            ),
-            txHash: log.transactionHash ?? "",
-          }))
-          .reverse()
-          .slice(0, 20);
-
-        setTotalCount(logs.length);
-        setDeliberations(parsed);
+      if (total === 0) {
+        setDeliberations([]);
         setError(null);
-      } catch (err: unknown) {
-        console.error("Failed to fetch via logs:", err);
-        try {
-          await fetchViaReads();
-          setError(null);
-        } catch {
-          setError("Unable to load deliberation history");
-        }
-      } finally {
-        if (isInitial) setLoading(false);
+        return;
       }
-    },
-    [fetchViaReads]
-  );
+
+      // Fetch latest 20 decisions via individual readContract calls
+      // (avoids multicall which may not be supported on all public RPCs)
+      const count = Math.min(total, 20);
+      const start = total - count;
+
+      const results = await Promise.all(
+        Array.from({ length: count }, (_, i) =>
+          client
+            .readContract({
+              address: CONTRACT,
+              abi: GET_DECISION_ABI,
+              functionName: "getDecision",
+              args: [BigInt(start + i)],
+            })
+            .then((d) => ({
+              id: start + i,
+              market: d.market,
+              decision: d.decision,
+              confidence: Number(d.confidence),
+              timestamp: Number(d.timestamp),
+            }))
+            .catch(() => null)
+        )
+      );
+
+      const parsed: Deliberation[] = results
+        .filter((d): d is Deliberation => d !== null)
+        .reverse(); // newest first
+
+      setDeliberations(parsed);
+      setError(null);
+    } catch (err: unknown) {
+      console.error("Failed to fetch deliberations:", err);
+      if (isInitial) setError("Unable to load deliberation history");
+    } finally {
+      if (isInitial) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchDeliberations(true);
 
-    // Auto-refresh every 60s
     intervalRef.current = setInterval(() => {
       fetchDeliberations(false);
     }, REFRESH_INTERVAL_MS);
@@ -182,7 +134,6 @@ export default function DeliberationHistory() {
   }, [fetchDeliberations]);
 
   function formatConfidence(basisPoints: number): string {
-    // Confidence stored as basis points (0-10000), display as percentage
     return `${(basisPoints / 100).toFixed(0)}%`;
   }
 
@@ -197,18 +148,18 @@ export default function DeliberationHistory() {
     });
   }
 
-  function truncateHash(hash: string): string {
-    if (!hash) return "";
-    return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
-  }
-
   function getVerdictStyle(decision: string): string {
     const d = decision.toUpperCase();
     if (d.includes("BUY") || d.includes("APPROVE") || d.includes("YES"))
       return "text-emerald-400";
     if (d.includes("SELL") || d.includes("REJECT") || d.includes("NO"))
       return "text-red-400";
-    if (d.includes("HOLD") || d.includes("SKIP") || d.includes("ABSTAIN") || d.includes("PASS"))
+    if (
+      d.includes("HOLD") ||
+      d.includes("SKIP") ||
+      d.includes("ABSTAIN") ||
+      d.includes("PASS")
+    )
       return "text-amber-400";
     return "text-zinc-300";
   }
@@ -320,25 +271,22 @@ export default function DeliberationHistory() {
                   <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
                     Time
                   </th>
-                  <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                    Tx
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {deliberations.map((d) => (
                   <tr
-                    key={d.id.toString()}
+                    key={d.id}
                     className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs text-zinc-500">
-                      {d.id.toString()}
+                      {d.id}
                     </td>
-                    <td className="px-4 py-3 text-sm text-zinc-300 max-w-[200px] truncate">
+                    <td className="px-4 py-3 text-sm text-zinc-300 max-w-[300px] truncate">
                       {d.market}
                     </td>
                     <td
-                      className={`px-4 py-3 font-mono text-xs font-bold ${getVerdictStyle(
+                      className={`px-4 py-3 font-mono text-xs font-bold uppercase ${getVerdictStyle(
                         d.decision
                       )}`}
                     >
@@ -350,20 +298,6 @@ export default function DeliberationHistory() {
                     <td className="px-4 py-3 font-mono text-xs text-zinc-500">
                       {formatTimestamp(d.timestamp)}
                     </td>
-                    <td className="px-4 py-3">
-                      {d.txHash ? (
-                        <a
-                          href={`https://basescan.org/tx/${d.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-xs text-accent-light hover:text-white transition-colors"
-                        >
-                          {truncateHash(d.txHash)}
-                        </a>
-                      ) : (
-                        <span className="text-xs text-zinc-600">—</span>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -374,13 +308,13 @@ export default function DeliberationHistory() {
         {/* Mobile cards */}
         <div className="md:hidden space-y-3">
           {deliberations.map((d) => (
-            <div key={d.id.toString()} className="card p-4 space-y-2">
+            <div key={d.id} className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-zinc-500">
-                  #{d.id.toString()}
+                  #{d.id}
                 </span>
                 <span
-                  className={`font-mono text-xs font-bold ${getVerdictStyle(
+                  className={`font-mono text-xs font-bold uppercase ${getVerdictStyle(
                     d.decision
                   )}`}
                 >
@@ -396,16 +330,6 @@ export default function DeliberationHistory() {
                   {formatTimestamp(d.timestamp)}
                 </span>
               </div>
-              {d.txHash && (
-                <a
-                  href={`https://basescan.org/tx/${d.txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block font-mono text-xs text-accent-light hover:text-white transition-colors"
-                >
-                  {truncateHash(d.txHash)} →
-                </a>
-              )}
             </div>
           ))}
         </div>
