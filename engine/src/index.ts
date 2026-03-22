@@ -103,12 +103,8 @@ async function runCycle(): Promise<void> {
     // Run the council (4 analysts via Bankr, Arbiter via Venice private inference)
     const decision = await runCouncil(opp, config.bankrApiKey, config.veniceApiKey);
 
-    // Log on-chain (skips if no contract or if pass)
-    if (decision.action !== 'pass') {
-      await logDecision(decision, config);
-    } else {
-      console.log('  📝 Pass — skipping on-chain log');
-    }
+    // Log all decisions on-chain (pass and trade)
+    await logDecision(decision, config);
 
     // Execute trade (paper or live)
     if (decision.action !== 'pass') {
