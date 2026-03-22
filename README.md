@@ -74,7 +74,7 @@ Kairos consumes Diverge's API to get pre-matched opportunities with price data f
 
 Every deliberation — all 5 opinions, the final verdict, opportunity metadata, timestamps — is serialized and logged to Base mainnet via an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) contract.
 
-**Contract:** [`0xa31c6c7f3785aec4e60e3e73868ab126263a24be`](https://basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be) (Base mainnet)
+**Contract:** [`0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608`](https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608) (Base mainnet)
 
 No off-chain database. No S3 bucket. The contract *is* the storage layer. Anyone can read the full deliberation history directly from the chain.
 
@@ -114,7 +114,7 @@ VENICE_API_KEY=your_venice_key
 KAIROS_PRIVATE_KEY=your_wallet_private_key
 KAIROS_EOA=your_eoa_address
 BASE_RPC_URL=https://mainnet.base.org
-LOGGER_CONTRACT_ADDRESS=0xa31c6c7f3785aec4e60e3e73868ab126263a24be
+LOGGER_CONTRACT_ADDRESS=0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608
 
 # Data Source
 DIVERGE_API_URL=https://api.diverge.market

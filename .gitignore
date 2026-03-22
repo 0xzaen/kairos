@@ -9,3 +9,5 @@ dist/
 # Next.js
 landing/.next/
 .next/
+log-deliberations.cjs
+log-deliberations.mjs

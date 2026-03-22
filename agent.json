@@ -15,7 +15,7 @@
   "chain": {
     "network": "base",
     "chainId": 8453,
-    "contract": "0xa31c6c7f3785aec4e60e3e73868ab126263a24be",
+    "contract": "0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608",
     "standard": "ERC-8004"
   },
   "council": [

@@ -5,7 +5,8 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
 // 1. Compile
-const source = fs.readFileSync('/home/ubuntu/kairos-v2/contracts/KairosLogger.sol', 'utf8');
+const __dirname = new URL('.', import.meta.url).pathname;
+const source = fs.readFileSync(__dirname + '../contracts/KairosLogger.sol', 'utf8');
 const input = JSON.stringify({
   language: 'Solidity',
   sources: { 'KairosLogger.sol': { content: source } },
@@ -26,7 +27,7 @@ console.log(`Compiled. Bytecode: ${bytecode.length} chars`);
 // 2. Deploy
 if (!process.env.KAIROS_PRIVATE_KEY) throw new Error('KAIROS_PRIVATE_KEY env var required');
 const account = privateKeyToAccount(`0x${process.env.KAIROS_PRIVATE_KEY}`);
-const transport = http('https://mainnet.base.org');
+const transport = http(process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
 const walletClient = createWalletClient({ account, chain: base, transport });
 const publicClient = createPublicClient({ chain: base, transport });
@@ -59,7 +60,7 @@ const contractOwner = await publicClient.readContract({
 console.log(`owner(): ${contractOwner}`);
 
 // 4. Save
-fs.writeFileSync('/home/ubuntu/kairos-v2/CONTRACT_ADDRESS.txt', receipt.contractAddress);
-fs.writeFileSync('/home/ubuntu/kairos-v2/deploy/abi.json', JSON.stringify(abi, null, 2));
+fs.writeFileSync(__dirname + '../CONTRACT_ADDRESS.txt', receipt.contractAddress);
+fs.writeFileSync(__dirname + 'abi.json', JSON.stringify(abi, null, 2));
 console.log(`\n✅ Contract address saved to CONTRACT_ADDRESS.txt`);
 console.log(`✅ ABI saved to deploy/abi.json`);

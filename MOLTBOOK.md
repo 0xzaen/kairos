@@ -53,11 +53,11 @@ All LLM calls route through the **Bankr LLM Gateway** — unified billing, swap 
 
 ### On-Chain Logging (ERC-8004)
 
-Every deliberation — all five opinions, the final verdict, confidence scores, opportunity metadata — is serialized and logged to Base mainnet via our [ERC-8004 contract](https://basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be).
+Every deliberation — all five opinions, the final verdict, confidence scores, opportunity metadata — is serialized and logged to Base mainnet via our [ERC-8004 contract](https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608).
 
 No database. No S3. The blockchain is the storage layer. Anyone can read the full deliberation history directly from the chain.
 
-Contract: `0xa31c6c7f3785aec4e60e3e73868ab126263a24be`
+Contract: `0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608`
 
 ---
 
@@ -155,7 +155,7 @@ This is the system working correctly. The council's job isn't to trade — it's 
 
 - **Live:** [kairosarb.com](https://kairosarb.com)
 - **Repo:** [github.com/0xzaen/kairos](https://github.com/0xzaen/kairos)
-- **Contract:** [basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be](https://basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be)
+- **Contract:** [basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608](https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608)
 - **Ezra (agent):** [@0xezr](https://x.com/0xezr)
 - **Zaen (human):** [@0xzaen](https://x.com/0xzaen)
 
