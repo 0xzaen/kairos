@@ -1,0 +1,138 @@
+{
+  "agent": "kairos",
+  "version": "2.0.0",
+  "generatedAt": "2026-03-20T21:00:00Z",
+  "summary": {
+    "totalCycles": 30,
+    "totalDeliberations": 106,
+    "totalTrades": 0,
+    "totalPasses": 106,
+    "passRate": 1.0,
+    "onChainTxs": 2,
+    "onChainContract": "0xa31c6c7f3785aec4e60e3e73868ab126263a24be",
+    "avgDeliberationTime": "134s",
+    "avgConfidence": 0.92,
+    "uptime": "18h"
+  },
+  "onChainTransactions": [
+    {
+      "txHash": "0xfcbf45669f10c5b25efc5d63b91513c46310cf091dcbb02462af37bf2b4f8d6c",
+      "block": 43579700,
+      "timestamp": "2026-03-19T19:30:21Z",
+      "type": "logDecision"
+    },
+    {
+      "txHash": "0xeba2b2f54cd0e2e472427a298162711cf1a48f3d8e9f6fcb990e4b3306152b7c",
+      "block": 43579710,
+      "timestamp": "2026-03-19T19:30:49Z",
+      "type": "logDecision"
+    }
+  ],
+  "sampleDeliberations": [
+    {
+      "timestamp": "2026-03-20T15:20:00Z",
+      "opportunity": "Will Jesse Jackson Jr. be the Democratic Nominee for IL-02?",
+      "polymarketYes": 0.375,
+      "kalshiYes": 0.1874,
+      "spread": 0.1876,
+      "verdict": "PASS",
+      "confidence": 0.85,
+      "deliberationTime": "112s",
+      "reasoning": "Extreme illiquidity on both sides. Sub-$1000 volume. Spread exists because nobody is trading, not because of information asymmetry.",
+      "votes": {
+        "technician": { "vote": "PASS", "confidence": 0.90, "reason": "No meaningful order book depth on either platform" },
+        "sentinel": { "vote": "PASS", "confidence": 0.85, "reason": "No news catalysts, low-attention race" },
+        "detective": { "vote": "PASS", "confidence": 0.95, "reason": "Resolution criteria may differ between platforms" },
+        "devil": { "vote": "PASS", "confidence": 0.95, "reason": "Liquidity trap — no exit path even if correct" },
+        "arbiter": { "vote": "PASS", "confidence": 0.85, "reason": "Unanimous pass. Gap is artifact of thin markets." }
+      }
+    },
+    {
+      "timestamp": "2026-03-20T15:25:00Z",
+      "opportunity": "Will the upper bound of the target federal funds rate be 3.25% at the end of 2026?",
+      "polymarketYes": 0.315,
+      "kalshiYes": 0.51,
+      "spread": 0.157,
+      "verdict": "PASS",
+      "confidence": 0.95,
+      "deliberationTime": "162s",
+      "reasoning": "Structural contract differences. Polymarket resolves on Fed announcement, Kalshi resolves on end-of-year rate. Different questions despite similar wording.",
+      "votes": {
+        "technician": { "vote": "PASS", "confidence": 0.90, "reason": "Spread is structural, not informational" },
+        "sentinel": { "vote": "PASS", "confidence": 0.95, "reason": "No imminent Fed meeting catalyst" },
+        "detective": { "vote": "PASS", "confidence": 0.98, "reason": "Resolution criteria fundamentally different" },
+        "devil": { "vote": "PASS", "confidence": 0.95, "reason": "Even with identical criteria, 15% spread on macro markets is noise" },
+        "arbiter": { "vote": "PASS", "confidence": 0.95, "reason": "Contract mismatch confirmed. Not arbitrage." }
+      }
+    },
+    {
+      "timestamp": "2026-03-20T17:55:00Z",
+      "opportunity": "Will Bitcoin reach $110,000 by December 31, 2026?",
+      "polymarketYes": 0.275,
+      "kalshiYes": 0.085,
+      "spread": 0.13,
+      "verdict": "PASS",
+      "confidence": 0.95,
+      "deliberationTime": "118s",
+      "reasoning": "Large spread but Kalshi market has near-zero liquidity. Polymarket price is more reliable given 10x volume. Executing on Kalshi side would move the market entirely.",
+      "votes": {
+        "technician": { "vote": "PASS", "confidence": 0.95, "reason": "Kalshi book is empty — any buy would be 100% of volume" },
+        "sentinel": { "vote": "PASS", "confidence": 0.90, "reason": "No directional catalyst to justify entry" },
+        "detective": { "vote": "PASS", "confidence": 0.95, "reason": "Kalshi price is stale, not mispriced" },
+        "devil": { "vote": "PASS", "confidence": 0.90, "reason": "Spread is wide because Kalshi side is abandoned" },
+        "arbiter": { "vote": "PASS", "confidence": 0.95, "reason": "Stale pricing, not exploitable. Pass." }
+      }
+    },
+    {
+      "timestamp": "2026-03-20T18:00:00Z",
+      "opportunity": "Will Luiz Inácio Lula da Silva win the 2026 Brazilian presidential election?",
+      "polymarketYes": 0.445,
+      "kalshiYes": 0.545,
+      "spread": 0.066,
+      "verdict": "PASS",
+      "confidence": 0.98,
+      "deliberationTime": "95s",
+      "reasoning": "6.6% spread is within normal noise for long-dated political markets. Both platforms show reasonable volume. No information edge.",
+      "votes": {
+        "technician": { "vote": "PASS", "confidence": 0.95, "reason": "Spread within historical noise band for political markets" },
+        "sentinel": { "vote": "PASS", "confidence": 0.98, "reason": "No breaking news or polling shift" },
+        "detective": { "vote": "PASS", "confidence": 0.95, "reason": "Resolution criteria aligned — genuine match, just no edge" },
+        "devil": { "vote": "PASS", "confidence": 0.98, "reason": "6.6% is not enough to cover execution risk on political markets" },
+        "arbiter": { "vote": "PASS", "confidence": 0.98, "reason": "Legitimate match, no exploitable gap. This is markets agreeing." }
+      }
+    }
+  ],
+  "securityIncidents": [
+    {
+      "timestamp": "2026-03-19T04:00:00Z",
+      "type": "credential_leak",
+      "description": "AI agent committed .env file with wallet private key to public GitHub repository",
+      "impact": "$700 drained from wallet in 15 minutes by automated scanning bot",
+      "resolution": "Repository deleted, credentials rotated, wallet abandoned",
+      "rootCause": "Subagent optimized for task completion over security; no pre-commit secret scanning"
+    },
+    {
+      "timestamp": "2026-03-20T14:00:00Z",
+      "type": "credential_leak",
+      "description": "AI agent hardcoded OpenRouter API key as fallback default in TypeScript file",
+      "impact": "Key exposed in public repo, caught by human before bot exploitation",
+      "resolution": "Key removed from code, rotated at provider",
+      "rootCause": "Subagent treated 'private repo' as secure; credentials passed in task description"
+    },
+    {
+      "timestamp": "2026-03-19T19:30:00Z",
+      "type": "credential_leak",
+      "description": "AI agent hardcoded wallet private key in deploy script and pushed to public repo",
+      "impact": "$12 drained from wallet in 3 minutes by automated scanning bot",
+      "resolution": "Repository deleted and recreated clean, wallet abandoned",
+      "rootCause": "Subagent inlined private key for 'convenience'; no diff review before push"
+    }
+  ],
+  "securityFixes": [
+    "PR-only workflow — no direct pushes to main branch",
+    "GitHub Secret Scanning + Push Protection enabled",
+    "Credential isolation — subagent task descriptions reference env var names only, never actual secrets",
+    "Pre-commit secret scanning via grep pattern matching",
+    "Rules permanently encoded in agent memory (AGENTS.md, MEMORY.md)"
+  ]
+}
