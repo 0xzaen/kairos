@@ -53,6 +53,8 @@ interface Deliberation {
   decision: string;
   confidence: number; // basis points (0-10000)
   timestamp: number;
+  polyYes?: number;
+  kalshiYes?: number;
 }
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -96,19 +98,32 @@ export default function DeliberationHistory() {
               functionName: "getDecision",
               args: [BigInt(start + i)],
             })
-            .then((d) => ({
-              id: start + i,
-              market: d.market,
-              decision: d.decision,
-              confidence: Number(d.confidence),
-              timestamp: Number(d.timestamp),
-            }))
+            .then((d) => {
+              let polyYes: number | undefined;
+              let kalshiYes: number | undefined;
+              try {
+                const meta = JSON.parse(d.metadata);
+                if (meta.opportunity) {
+                  polyYes = meta.opportunity.polyYes;
+                  kalshiYes = meta.opportunity.kalshiYes;
+                }
+              } catch {}
+              return {
+                id: start + i,
+                market: d.market,
+                decision: d.decision,
+                confidence: Number(d.confidence),
+                timestamp: Number(d.timestamp),
+                polyYes,
+                kalshiYes,
+              };
+            })
             .catch(() => null)
         )
       );
 
-      const parsed: Deliberation[] = results
-        .filter((d): d is Deliberation => d !== null)
+      const parsed: Deliberation[] = (results
+        .filter((d): d is NonNullable<typeof d> => d !== null) as Deliberation[])
         .reverse(); // newest first
 
       setDeliberations(parsed);
@@ -263,6 +278,9 @@ export default function DeliberationHistory() {
                     Market
                   </th>
                   <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                    Markets
+                  </th>
+                  <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
                     Verdict
                   </th>
                   <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
@@ -277,13 +295,44 @@ export default function DeliberationHistory() {
                 {deliberations.map((d) => (
                   <tr
                     key={d.id}
-                    className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
+                    className="group/row border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs text-zinc-500">
-                      {d.id}
+                      <a
+                        href={`https://basescan.org/address/${CONTRACT}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-accent-light transition-colors"
+                        title="View contract on BaseScan"
+                      >
+                        {d.id}
+                        <span className="ml-1 opacity-0 group-hover/row:opacity-100 transition-opacity">↗</span>
+                      </a>
                     </td>
                     <td className="px-4 py-3 text-sm text-zinc-300 max-w-[300px] truncate">
                       {d.market}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-purple-300 hover:border-purple-500/40 transition-colors text-[10px] font-mono"
+                          title="View on Polymarket"
+                        >
+                          Poly{d.polyYes != null ? ` ${(d.polyYes * 100).toFixed(0)}¢` : ""}
+                        </a>
+                        <a
+                          href={`https://www.google.com/search?q=site:kalshi.com+${encodeURIComponent(d.market)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:text-blue-300 hover:border-blue-500/40 transition-colors text-[10px] font-mono"
+                          title="View on Kalshi"
+                        >
+                          Kalshi{d.kalshiYes != null ? ` ${(d.kalshiYes * 100).toFixed(0)}¢` : ""}
+                        </a>
+                      </div>
                     </td>
                     <td
                       className={`px-4 py-3 font-mono text-xs font-bold uppercase ${getVerdictStyle(
@@ -310,9 +359,15 @@ export default function DeliberationHistory() {
           {deliberations.map((d) => (
             <div key={d.id} className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-zinc-500">
-                  #{d.id}
-                </span>
+                <a
+                  href={`https://basescan.org/address/${CONTRACT}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-zinc-500 hover:text-accent-light transition-colors"
+                  title="View contract on BaseScan"
+                >
+                  #{d.id} ↗
+                </a>
                 <span
                   className={`font-mono text-xs font-bold uppercase ${getVerdictStyle(
                     d.decision
@@ -322,6 +377,24 @@ export default function DeliberationHistory() {
                 </span>
               </div>
               <p className="text-sm text-zinc-300 truncate">{d.market}</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors text-[10px] font-mono"
+                >
+                  Poly{d.polyYes != null ? ` ${(d.polyYes * 100).toFixed(0)}¢` : ""}
+                </a>
+                <a
+                  href={`https://www.google.com/search?q=site:kalshi.com+${encodeURIComponent(d.market)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors text-[10px] font-mono"
+                >
+                  Kalshi{d.kalshiYes != null ? ` ${(d.kalshiYes * 100).toFixed(0)}¢` : ""}
+                </a>
+              </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-mono text-zinc-500">
                   {formatConfidence(d.confidence)} confidence
