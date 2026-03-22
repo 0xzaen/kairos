@@ -29,7 +29,8 @@ const ABI = [
 ] as const;
 
 export async function logDecision(decision: Decision, config: Config): Promise<string | null> {
-  if (!config.loggerContract || !config.privateKey) {
+  const loggerKey = config.loggerPrivateKey || config.privateKey;
+  if (!config.loggerContract || !loggerKey) {
     console.log('  ℹ On-chain logging skipped (no contract/key configured)');
     return null;
   }
@@ -53,7 +54,7 @@ export async function logDecision(decision: Decision, config: Config): Promise<s
   });
 
   try {
-    const account = privateKeyToAccount((`0x${config.privateKey.replace('0x', '')}`) as Hex);
+    const account = privateKeyToAccount((`0x${loggerKey.replace('0x', '')}`) as Hex);
     const walletClient = createWalletClient({
       account,
       chain: base,

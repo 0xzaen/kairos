@@ -11,6 +11,7 @@ export interface Config {
   bankrApiKey: string;
   veniceApiKey?: string;
   privateKey?: string;
+  loggerPrivateKey?: string;
   eoa?: string;
   paperTrading: boolean;
   loggerContract?: string;
@@ -38,6 +39,7 @@ export function loadConfig(): Config {
     bankrApiKey,
     veniceApiKey: process.env.VENICE_API_KEY || undefined,
     privateKey,
+    loggerPrivateKey: process.env.OWNER_PRIVATE_KEY || undefined,
     eoa,
     paperTrading,
     loggerContract: process.env.LOGGER_CONTRACT_ADDRESS || undefined,
