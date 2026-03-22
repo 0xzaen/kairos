@@ -277,13 +277,30 @@ export default function DeliberationHistory() {
                 {deliberations.map((d) => (
                   <tr
                     key={d.id}
-                    className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
+                    className="group/row border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs text-zinc-500">
-                      {d.id}
+                      <a
+                        href={`https://basescan.org/address/${CONTRACT}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-accent-light transition-colors"
+                        title="View contract on BaseScan"
+                      >
+                        {d.id}
+                        <span className="ml-1 opacity-0 group-hover/row:opacity-100 transition-opacity">↗</span>
+                      </a>
                     </td>
                     <td className="px-4 py-3 text-sm text-zinc-300 max-w-[300px] truncate">
-                      {d.market}
+                      <a
+                        href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-white transition-colors"
+                        title="Search on Polymarket"
+                      >
+                        {d.market}
+                      </a>
                     </td>
                     <td
                       className={`px-4 py-3 font-mono text-xs font-bold uppercase ${getVerdictStyle(
@@ -310,9 +327,15 @@ export default function DeliberationHistory() {
           {deliberations.map((d) => (
             <div key={d.id} className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-zinc-500">
-                  #{d.id}
-                </span>
+                <a
+                  href={`https://basescan.org/address/${CONTRACT}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-zinc-500 hover:text-accent-light transition-colors"
+                  title="View contract on BaseScan"
+                >
+                  #{d.id} ↗
+                </a>
                 <span
                   className={`font-mono text-xs font-bold uppercase ${getVerdictStyle(
                     d.decision
@@ -321,7 +344,15 @@ export default function DeliberationHistory() {
                   {d.decision}
                 </span>
               </div>
-              <p className="text-sm text-zinc-300 truncate">{d.market}</p>
+              <a
+                href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm text-zinc-300 truncate hover:text-white transition-colors"
+                title="Search on Polymarket"
+              >
+                {d.market}
+              </a>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-mono text-zinc-500">
                   {formatConfidence(d.confidence)} confidence
