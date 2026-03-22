@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 
-const CONTRACT = "0xa31c6c7f3785aec4e60e3e73868ab126263a24be" as const;
+const CONTRACT = "0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608" as const;
 
 const client = createPublicClient({
   chain: base,

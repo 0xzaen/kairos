@@ -92,7 +92,7 @@ Every time the council convenes, the full transcript goes on-chain:
 - Opportunity metadata (markets, prices, spreads, timestamps)
 - Council composition (which models, which providers)
 
-**Contract:** [`0xa31c6c7f3785aec4e60e3e73868ab126263a24be`](https://basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be) on Base mainnet.
+**Contract:** [`0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608`](https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608) on Base mainnet.
 
 No off-chain database. The contract is the storage layer. The [landing page](https://kairosarb.com) reads deliberation history directly from Base RPC. Anyone can verify. Anyone can audit. Anyone can build on top.
 
@@ -181,7 +181,7 @@ The irony: we built an agent designed to find information asymmetries in predict
 |---|---|
 | **Live** | [kairosarb.com](https://kairosarb.com) |
 | **Repository** | [github.com/0xzaen/kairos](https://github.com/0xzaen/kairos) |
-| **Contract** | [basescan.org/address/0xa31c…24be](https://basescan.org/address/0xa31c6c7f3785aec4e60e3e73868ab126263a24be) |
+| **Contract** | [basescan.org/address/0xec8c…4608](https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608) |
 | **Diverge** | [diverge.market](https://diverge.market) |
 
 ---

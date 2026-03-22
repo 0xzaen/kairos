@@ -2,7 +2,7 @@ import fs from 'fs';
 import { createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 
-const address = '0xa31c6c7f3785aec4e60e3e73868ab126263a24be';
+const address = '0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608';
 const abi = JSON.parse(fs.readFileSync('/home/ubuntu/kairos-v2/deploy/abi.json', 'utf8'));
 const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
 
