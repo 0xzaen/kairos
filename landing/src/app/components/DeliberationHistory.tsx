@@ -53,6 +53,8 @@ interface Deliberation {
   decision: string;
   confidence: number; // basis points (0-10000)
   timestamp: number;
+  polyYes?: number;
+  kalshiYes?: number;
 }
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -96,19 +98,32 @@ export default function DeliberationHistory() {
               functionName: "getDecision",
               args: [BigInt(start + i)],
             })
-            .then((d) => ({
-              id: start + i,
-              market: d.market,
-              decision: d.decision,
-              confidence: Number(d.confidence),
-              timestamp: Number(d.timestamp),
-            }))
+            .then((d) => {
+              let polyYes: number | undefined;
+              let kalshiYes: number | undefined;
+              try {
+                const meta = JSON.parse(d.metadata);
+                if (meta.opportunity) {
+                  polyYes = meta.opportunity.polyYes;
+                  kalshiYes = meta.opportunity.kalshiYes;
+                }
+              } catch {}
+              return {
+                id: start + i,
+                market: d.market,
+                decision: d.decision,
+                confidence: Number(d.confidence),
+                timestamp: Number(d.timestamp),
+                polyYes,
+                kalshiYes,
+              };
+            })
             .catch(() => null)
         )
       );
 
-      const parsed: Deliberation[] = results
-        .filter((d): d is Deliberation => d !== null)
+      const parsed: Deliberation[] = (results
+        .filter((d): d is NonNullable<typeof d> => d !== null) as Deliberation[])
         .reverse(); // newest first
 
       setDeliberations(parsed);
@@ -263,6 +278,9 @@ export default function DeliberationHistory() {
                     Market
                   </th>
                   <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                    Markets
+                  </th>
+                  <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
                     Verdict
                   </th>
                   <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
@@ -292,15 +310,29 @@ export default function DeliberationHistory() {
                       </a>
                     </td>
                     <td className="px-4 py-3 text-sm text-zinc-300 max-w-[300px] truncate">
-                      <a
-                        href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-white transition-colors"
-                        title="Search on Polymarket"
-                      >
-                        {d.market}
-                      </a>
+                      {d.market}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-purple-300 hover:border-purple-500/40 transition-colors text-[10px] font-mono"
+                          title="View on Polymarket"
+                        >
+                          Poly{d.polyYes != null ? ` ${(d.polyYes * 100).toFixed(0)}¢` : ""}
+                        </a>
+                        <a
+                          href={`https://www.google.com/search?q=site:kalshi.com+${encodeURIComponent(d.market)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:text-blue-300 hover:border-blue-500/40 transition-colors text-[10px] font-mono"
+                          title="View on Kalshi"
+                        >
+                          Kalshi{d.kalshiYes != null ? ` ${(d.kalshiYes * 100).toFixed(0)}¢` : ""}
+                        </a>
+                      </div>
                     </td>
                     <td
                       className={`px-4 py-3 font-mono text-xs font-bold uppercase ${getVerdictStyle(
@@ -344,15 +376,25 @@ export default function DeliberationHistory() {
                   {d.decision}
                 </span>
               </div>
-              <a
-                href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-zinc-300 truncate hover:text-white transition-colors"
-                title="Search on Polymarket"
-              >
-                {d.market}
-              </a>
+              <p className="text-sm text-zinc-300 truncate">{d.market}</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.google.com/search?q=site:polymarket.com+${encodeURIComponent(d.market)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-purple-300 transition-colors text-[10px] font-mono"
+                >
+                  Poly{d.polyYes != null ? ` ${(d.polyYes * 100).toFixed(0)}¢` : ""}
+                </a>
+                <a
+                  href={`https://www.google.com/search?q=site:kalshi.com+${encodeURIComponent(d.market)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors text-[10px] font-mono"
+                >
+                  Kalshi{d.kalshiYes != null ? ` ${(d.kalshiYes * 100).toFixed(0)}¢` : ""}
+                </a>
+              </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-mono text-zinc-500">
                   {formatConfidence(d.confidence)} confidence
