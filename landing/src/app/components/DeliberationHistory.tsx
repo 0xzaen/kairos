@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPublicClient, http, parseAbiItem, formatUnits } from "viem";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { createPublicClient, http, parseAbiItem } from "viem";
 import { base } from "viem/chains";
 
 const CONTRACT = "0xa31c6c7f3785aec4e60e3e73868ab126263a24be" as const;
@@ -21,23 +21,111 @@ interface Deliberation {
   id: bigint;
   market: string;
   decision: string;
-  confidence: number;
+  confidence: number; // basis points (0-10000)
   timestamp: number;
   txHash: string;
 }
 
+const REFRESH_INTERVAL_MS = 60_000; // Auto-refresh every 60s
+
 export default function DeliberationHistory() {
   const [deliberations, setDeliberations] = useState<Deliberation[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    async function fetchDeliberations() {
+  const fetchViaReads = useCallback(async () => {
+    const totalRaw = await client.readContract({
+      address: CONTRACT,
+      abi: [
+        {
+          inputs: [],
+          name: "totalDecisions",
+          outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+          stateMutability: "view",
+          type: "function",
+        },
+      ],
+      functionName: "totalDecisions",
+    });
+    const total = Number(totalRaw);
+    setTotalCount(total);
+
+    if (total === 0) {
+      setDeliberations([]);
+      return;
+    }
+
+    const count = Math.min(total, 20);
+    const start = total - count;
+    const calls = Array.from({ length: count }, (_, i) => ({
+      address: CONTRACT as `0x${string}`,
+      abi: [
+        {
+          inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
+          name: "getDecision",
+          outputs: [
+            {
+              components: [
+                { internalType: "string", name: "market", type: "string" },
+                { internalType: "string", name: "decision", type: "string" },
+                { internalType: "uint256", name: "confidence", type: "uint256" },
+                { internalType: "string", name: "metadata", type: "string" },
+                { internalType: "uint256", name: "timestamp", type: "uint256" },
+                { internalType: "address", name: "reporter", type: "address" },
+              ],
+              internalType: "struct KairosLogger.Decision",
+              name: "",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+      ] as const,
+      functionName: "getDecision" as const,
+      args: [BigInt(start + i)] as readonly [bigint],
+    }));
+
+    const results = await client.multicall({ contracts: calls });
+
+    const parsed: Deliberation[] = results
+      .map((r, i) => {
+        if (r.status !== "success" || !r.result) return null;
+        const d = r.result as {
+          market: string;
+          decision: string;
+          confidence: bigint;
+          metadata: string;
+          timestamp: bigint;
+          reporter: string;
+        };
+        return {
+          id: BigInt(start + i),
+          market: d.market,
+          decision: d.decision,
+          confidence: Number(d.confidence),
+          timestamp: Number(d.timestamp),
+          txHash: "",
+        };
+      })
+      .filter((d): d is Deliberation => d !== null)
+      .reverse();
+
+    setDeliberations(parsed);
+  }, []);
+
+  const fetchDeliberations = useCallback(
+    async (isInitial = false) => {
+      if (isInitial) setLoading(true);
       try {
-        // Get the latest block to calculate a reasonable range
+        // Try event logs first
         const latestBlock = await client.getBlockNumber();
-        // Search last ~500k blocks (~2 weeks on Base)
-        const fromBlock = latestBlock > BigInt(500_000) ? latestBlock - BigInt(500_000) : BigInt(0);
+        const fromBlock =
+          latestBlock > BigInt(500_000)
+            ? latestBlock - BigInt(500_000)
+            : BigInt(0);
 
         const logs = await client.getLogs({
           address: CONTRACT,
@@ -60,127 +148,43 @@ export default function DeliberationHistory() {
             txHash: log.transactionHash ?? "",
           }))
           .reverse()
-          .slice(0, 20); // Show latest 20
+          .slice(0, 20);
 
+        setTotalCount(logs.length);
         setDeliberations(parsed);
+        setError(null);
       } catch (err: unknown) {
-        console.error("Failed to fetch deliberations:", err);
-        // Fallback: try reading totalDecisions and fetching individually
+        console.error("Failed to fetch via logs:", err);
         try {
           await fetchViaReads();
+          setError(null);
         } catch {
           setError("Unable to load deliberation history");
         }
       } finally {
-        setLoading(false);
+        if (isInitial) setLoading(false);
       }
-    }
+    },
+    [fetchViaReads]
+  );
 
-    async function fetchViaReads() {
-      const totalRaw = await client.readContract({
-        address: CONTRACT,
-        abi: [
-          {
-            inputs: [],
-            name: "totalDecisions",
-            outputs: [
-              { internalType: "uint256", name: "", type: "uint256" },
-            ],
-            stateMutability: "view",
-            type: "function",
-          },
-        ],
-        functionName: "totalDecisions",
-      });
-      const total = Number(totalRaw);
-      if (total === 0) {
-        setDeliberations([]);
-        return;
-      }
+  useEffect(() => {
+    fetchDeliberations(true);
 
-      const count = Math.min(total, 20);
-      const start = total - count;
-      const calls = Array.from({ length: count }, (_, i) => ({
-        address: CONTRACT as `0x${string}`,
-        abi: [
-          {
-            inputs: [
-              { internalType: "uint256", name: "id", type: "uint256" },
-            ],
-            name: "getDecision",
-            outputs: [
-              {
-                components: [
-                  { internalType: "string", name: "market", type: "string" },
-                  {
-                    internalType: "string",
-                    name: "decision",
-                    type: "string",
-                  },
-                  {
-                    internalType: "uint256",
-                    name: "confidence",
-                    type: "uint256",
-                  },
-                  {
-                    internalType: "string",
-                    name: "metadata",
-                    type: "string",
-                  },
-                  {
-                    internalType: "uint256",
-                    name: "timestamp",
-                    type: "uint256",
-                  },
-                  {
-                    internalType: "address",
-                    name: "reporter",
-                    type: "address",
-                  },
-                ],
-                internalType: "struct KairosLogger.Decision",
-                name: "",
-                type: "tuple",
-              },
-            ],
-            stateMutability: "view",
-            type: "function",
-          },
-        ] as const,
-        functionName: "getDecision" as const,
-        args: [BigInt(start + i)] as readonly [bigint],
-      }));
+    // Auto-refresh every 60s
+    intervalRef.current = setInterval(() => {
+      fetchDeliberations(false);
+    }, REFRESH_INTERVAL_MS);
 
-      const results = await client.multicall({ contracts: calls });
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchDeliberations]);
 
-      const parsed: Deliberation[] = results
-        .map((r, i) => {
-          if (r.status !== "success" || !r.result) return null;
-          const d = r.result as {
-            market: string;
-            decision: string;
-            confidence: bigint;
-            metadata: string;
-            timestamp: bigint;
-            reporter: string;
-          };
-          return {
-            id: BigInt(start + i),
-            market: d.market,
-            decision: d.decision,
-            confidence: Number(d.confidence),
-            timestamp: Number(d.timestamp),
-            txHash: "", // Not available from reads
-          };
-        })
-        .filter((d): d is Deliberation => d !== null)
-        .reverse();
-
-      setDeliberations(parsed);
-    }
-
-    fetchDeliberations();
-  }, []);
+  function formatConfidence(basisPoints: number): string {
+    // Confidence stored as basis points (0-10000), display as percentage
+    return `${(basisPoints / 100).toFixed(0)}%`;
+  }
 
   function formatTimestamp(ts: number): string {
     if (ts === 0) return "—";
@@ -204,7 +208,7 @@ export default function DeliberationHistory() {
       return "text-emerald-400";
     if (d.includes("SELL") || d.includes("REJECT") || d.includes("NO"))
       return "text-red-400";
-    if (d.includes("HOLD") || d.includes("SKIP") || d.includes("ABSTAIN"))
+    if (d.includes("HOLD") || d.includes("SKIP") || d.includes("ABSTAIN") || d.includes("PASS"))
       return "text-amber-400";
     return "text-zinc-300";
   }
@@ -249,7 +253,9 @@ export default function DeliberationHistory() {
               <span className="text-xl">⚖️</span>
             </div>
             <p className="text-zinc-300 text-sm font-medium mb-1">
-              {error ? "Unable to reach Base mainnet" : "The council is deliberating…"}
+              {error
+                ? "Unable to reach Base mainnet"
+                : "The council is deliberating…"}
             </p>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed">
               {error
@@ -284,9 +290,16 @@ export default function DeliberationHistory() {
           <p className="mt-4 text-muted max-w-lg mx-auto text-sm">
             Live from Base mainnet. Every council decision, permanently recorded.
           </p>
+          {/* Count badge */}
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-3 border border-zinc-700/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-mono text-zinc-300">
+              {totalCount} decision{totalCount !== 1 ? "s" : ""} on-chain
+            </span>
+          </div>
         </div>
 
-        {/* Mobile: cards / Desktop: table */}
+        {/* Desktop: table */}
         <div className="hidden md:block">
           <div className="card overflow-hidden">
             <table className="w-full text-left">
@@ -332,7 +345,7 @@ export default function DeliberationHistory() {
                       {d.decision}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-zinc-400">
-                      {d.confidence}%
+                      {formatConfidence(d.confidence)}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-zinc-500">
                       {formatTimestamp(d.timestamp)}
@@ -361,10 +374,7 @@ export default function DeliberationHistory() {
         {/* Mobile cards */}
         <div className="md:hidden space-y-3">
           {deliberations.map((d) => (
-            <div
-              key={d.id.toString()}
-              className="card p-4 space-y-2"
-            >
+            <div key={d.id.toString()} className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-zinc-500">
                   #{d.id.toString()}
@@ -380,7 +390,7 @@ export default function DeliberationHistory() {
               <p className="text-sm text-zinc-300 truncate">{d.market}</p>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-mono text-zinc-500">
-                  {d.confidence}% confidence
+                  {formatConfidence(d.confidence)} confidence
                 </span>
                 <span className="font-mono text-zinc-600">
                   {formatTimestamp(d.timestamp)}
