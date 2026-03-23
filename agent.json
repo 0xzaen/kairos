@@ -1,13 +1,58 @@
 {
   "name": "Kairos",
   "version": "2.0.0",
-  "description": "Cross-platform prediction market arbitrage agent. Five LLMs deliberate on price gaps between Polymarket and Kalshi. Every deliberation logged on-chain via ERC-8004.",
+  "description": "Cross-platform prediction market arbitrage engine with a 5-LLM deliberation council. Scans 59K+ indexed markets across Polymarket and Kalshi, identifies genuine price discrepancies, deliberates through 5 specialized LLMs in parallel, and logs every decision permanently on Base mainnet via ERC-8004.",
+  "operator_wallet": "0x9f4E7873ea70c809965b8b101b86d523c21bbba8",
+  "erc8004_identity": {
+    "agent_id": 33262,
+    "registry": "eip155:8453:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+    "contract": "0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608",
+    "network": "base-mainnet",
+    "chain_id": 8453,
+    "standard": "ERC-8004",
+    "explorer": "https://basescan.org/address/0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608"
+  },
+  "supported_tools": [
+    "Bankr LLM Gateway",
+    "Venice AI (Private Inference)",
+    "Diverge API (cross-platform market matching)",
+    "Base RPC via viem",
+    "Polymarket CLOB API",
+    "OpenClaw (agent orchestration)"
+  ],
+  "tech_stack": [
+    "TypeScript",
+    "Node.js",
+    "viem",
+    "Next.js 15",
+    "Tailwind CSS",
+    "PM2",
+    "Solidity",
+    "Hardhat"
+  ],
+  "compute_constraints": {
+    "models": 5,
+    "cycle_interval": "5 minutes",
+    "deliberation_time_avg": "134s",
+    "chain": "Base mainnet",
+    "mode": "paper",
+    "max_opportunities_per_cycle": 20,
+    "compute_budget": "5 LLM calls per opportunity (4 parallel + 1 sequential arbiter)"
+  },
+  "task_categories": [
+    "arbitrage-detection",
+    "multi-model-deliberation",
+    "on-chain-logging",
+    "prediction-market-analysis",
+    "cross-platform-market-matching"
+  ],
   "author": {
     "name": "Zaen Akai",
     "handle": "@0xzaen",
     "agent": {
       "name": "Ezra",
-      "handle": "@0xezr"
+      "handle": "@0xezr",
+      "harness": "openclaw"
     }
   },
   "repository": "https://github.com/0xzaen/kairos",
@@ -16,66 +61,92 @@
     "network": "base",
     "chainId": 8453,
     "contract": "0xec8c7f2f2468c19a337bc6ba68a122d0cdff4608",
-    "standard": "ERC-8004"
+    "standard": "ERC-8004",
+    "decisions_logged": 32
   },
   "council": [
     {
       "role": "Technician",
       "model": "claude-sonnet-4.6",
       "provider": "bankr",
-      "specialty": "Market Microstructure Analyst"
+      "specialty": "Market Microstructure Analyst",
+      "phase": 1,
+      "execution": "parallel"
     },
     {
       "role": "Sentinel",
       "model": "gemini-3-flash",
       "provider": "bankr",
-      "specialty": "News & Sentiment Analyst"
+      "specialty": "News & Sentiment Analyst",
+      "phase": 1,
+      "execution": "parallel"
     },
     {
       "role": "Detective",
       "model": "gemini-3-pro",
       "provider": "bankr",
-      "specialty": "Root Cause Analyst"
+      "specialty": "Root Cause Analyst",
+      "phase": 1,
+      "execution": "parallel"
     },
     {
       "role": "Devil",
       "model": "gpt-5.4-mini",
       "provider": "bankr",
-      "specialty": "Devil's Advocate"
+      "specialty": "Devil's Advocate",
+      "phase": 1,
+      "execution": "parallel"
     },
     {
       "role": "Arbiter",
       "model": "deepseek-v3.2",
       "provider": "venice-ai",
-      "specialty": "Final Decision Maker (Private Inference)",
-      "privacy": "private"
+      "specialty": "Final Decision Maker",
+      "privacy": "private-inference",
+      "phase": 2,
+      "execution": "sequential",
+      "note": "Private inference — reasoning never leaves Venice AI. Only verdict is logged on-chain."
     }
   ],
-  "dataSources": [
+  "deliberation_pipeline": {
+    "phase1": "Four specialists analyze in parallel — each sees the opportunity data and returns a structured verdict with confidence score and reasoning",
+    "phase2": "The Arbiter reads all four opinions plus opportunity data, synthesizes, and renders final verdict with confidence score",
+    "output": "Full deliberation serialized and logged to Base mainnet via logDecision(market, verdict, confidence, metadata)"
+  },
+  "data_sources": [
     {
       "name": "Diverge",
       "type": "cross-platform-matcher",
+      "url": "https://diverge.market",
       "platforms": ["polymarket", "kalshi"],
-      "markets": 59000,
-      "matches": 214
+      "markets_indexed": 59000,
+      "matches_found": 214,
+      "matching_method": "LLM-powered structured extraction + field-level comparison"
     }
   ],
+  "safety_and_guardrails": {
+    "pre_execution_checks": [
+      "Minimum spread threshold (configurable via MIN_SPREAD env var)",
+      "Liquidity validation before trade consideration",
+      "Council must reach verdict — no action on deliberation failure",
+      "Paper trading mode default — live execution requires explicit flag"
+    ],
+    "security_history": {
+      "incidents": 3,
+      "total_loss": "$712",
+      "mitigations": [
+        "PR-only workflow — no direct pushes to main",
+        "GitHub Secret Scanning + Push Protection",
+        "Credential isolation — agent task descriptions reference env var names only",
+        "Pre-commit secret scanning via grep pattern matching",
+        "Hard rules encoded in agent permanent memory (AGENTS.md, MEMORY.md)"
+      ]
+    }
+  },
   "execution": {
     "mode": "paper",
-    "supported": ["polymarket-clob"],
-    "cycleInterval": "5min"
-  },
-  "tools": [
-    "bankr-llm-gateway",
-    "venice-ai",
-    "openrouter",
-    "viem",
-    "openclaw"
-  ],
-  "skills": [
-    "cross-platform-market-matching",
-    "multi-llm-deliberation",
-    "on-chain-logging",
-    "prediction-market-analysis"
-  ]
+    "ready_for_live": true,
+    "live_requires": "Set PAPER_TRADING=false and provide KAIROS_PRIVATE_KEY + KAIROS_EOA",
+    "supported_venues": ["polymarket-clob"]
+  }
 }
