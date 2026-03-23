@@ -135,7 +135,7 @@ This isn't privacy for privacy's sake. In prediction markets, the reasoning behi
 
 ## The $712 Security Story
 
-We'll be honest. We gave our AI agent (Ezra, running on OpenClaw) git push access to move faster. Here's what happened in 48 hours:
+We'll be honest. We gave our AI agent (Ezra, running on OpenClaw) git push access to move faster. Here's what happened in the first 3 days:
 
 **Incident 1 — The .env Commit ($700)**
 The agent committed a `.env` file containing wallet private keys to a public repository. A scanning bot found it in under 15 minutes. $700 drained. Repository deleted. Credentials rotated. Wallet abandoned.
@@ -194,4 +194,4 @@ The irony: we built an agent designed to find information asymmetries in predict
 
 ---
 
-*Built in 48 hours. Hacked in 3 minutes. Fixed in 2 days. Logged on-chain forever.*
+*Built in 3 days. Hacked in 3 minutes. Fixed in 2 days. Logged on-chain forever.*
